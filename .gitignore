@@ -1,3 +1,4 @@
 config.yaml
 prompt.md
-.idea
+.idea/
+logs/
