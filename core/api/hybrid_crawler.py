@@ -14,21 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-# 　　　　 　　  ＿＿
-# 　　　 　　 ／＞　　フ
-# 　　　 　　| 　_　 _ l
-# 　 　　 　／` ミ＿xノ
-# 　　 　 /　　　 　 |       Feed me Stars ⭐ ️
-# 　　　 /　 ヽ　　 ﾉ
-# 　 　 │　　|　|　|
-# 　／￣|　　 |　|　|
-# 　| (￣ヽ＿_ヽ_)__)
-# 　＼二つ
-# ==============================================================================
 #
-# Contributor Link:
-# - https://github.com/Evil0ctal
+# Modifications by romcere, 2026
 #
+# Changes made:
+# - 删除了除douyin外的其他平台代码以及一些注释
 # ==============================================================================
 
 import asyncio
@@ -72,20 +62,6 @@ class HybridCrawler:
         }
         # 判断链接类型/Judge link type
         url_type = url_type_code_dict.get(aweme_type, 'video')
-        # print(f"url_type: {url_type}")
-
-        """
-        以下为(视频||图片)数据处理的四个方法,如果你需要自定义数据处理请在这里修改.
-        The following are four methods of (video || image) data processing. 
-        If you need to customize data processing, please modify it here.
-        """
-
-        """
-        创建已知数据字典(索引相同)，稍后使用.update()方法更新数据
-        Create a known data dictionary (index the same), 
-        and then use the .update() method to update the data
-        """
-
         # 根据平台适配字段映射
         result_data = {
             'type': url_type,
@@ -147,17 +123,14 @@ class HybridCrawler:
         # 更新数据/Update data
         result_data.update(api_data)
         return result_data
-
     async def main(self):
         # 测试混合解析单一视频接口/Test hybrid parsing single video endpoint
         url = "https://www.tiktok.com/@flukegk83/video/7360734489271700753"
         minimal = True
         result = await self.hybrid_parsing_single_video(url, minimal=minimal)
         print(result)
-
         # 占位
         pass
-
 
 if __name__ == '__main__':
     # 实例化混合爬虫/Instantiate hybrid crawler

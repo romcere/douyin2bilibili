@@ -14,32 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-# 　　　　 　　  ＿＿
-# 　　　 　　 ／＞　　フ
-# 　　　 　　| 　_　 _ l
-# 　 　　 　／` ミ＿xノ
-# 　　 　 /　　　 　 |       Feed me Stars ⭐ ️
-# 　　　 /　 ヽ　　 ﾉ
-# 　 　 │　　|　|　|
-# 　／￣|　　 |　|　|
-# 　| (￣ヽ＿_ヽ_)__)
-# 　＼二つ
-# ==============================================================================
-#
-# Contributor Link:
-# - https://github.com/Evil0ctal
-# - https://github.com/Johnserf-Seed
-#
-# ==============================================================================
 
 # 基础爬虫结构
 import httpx
 import json
 import asyncio
 import re
-
 from httpx import Response
-
 from core.common.logger import logger
 from .common.api_exceptions import (
     APIError,
@@ -58,7 +39,6 @@ class BaseCrawler:
     """
     基础爬虫客户端 (Base crawler client)
     """
-
     def __init__(
             self,
             proxies: dict = None,
@@ -110,10 +90,8 @@ class BaseCrawler:
 
     async def fetch_response(self, endpoint: str) -> Response:
         """获取数据 (Get data)
-
         Args:
             endpoint (str): 接口地址 (Endpoint URL)
-
         Returns:
             Response: 原始响应对象 (Raw response object)
         """
@@ -121,10 +99,8 @@ class BaseCrawler:
 
     async def fetch_get_json(self, endpoint: str) -> dict:
         """获取 JSON 数据 (Get JSON data)
-
         Args:
             endpoint (str): 接口地址 (Endpoint URL)
-
         Returns:
             dict: 解析后的JSON数据 (Parsed JSON data)
         """
@@ -133,10 +109,8 @@ class BaseCrawler:
 
     async def fetch_post_json(self, endpoint: str, params: dict = {}, data=None) -> dict:
         """获取 JSON 数据 (Post JSON data)
-
         Args:
             endpoint (str): 接口地址 (Endpoint URL)
-
         Returns:
             dict: 解析后的JSON数据 (Parsed JSON data)
         """
@@ -145,10 +119,8 @@ class BaseCrawler:
 
     def parse_json(self, response: Response) -> dict:
         """解析JSON响应对象 (Parse JSON response object)
-
         Args:
             response (Response): 原始响应对象 (Raw response object)
-
         Returns:
             dict: 解析后的JSON数据 (Parsed JSON data)
         """
@@ -181,10 +153,8 @@ class BaseCrawler:
     async def get_fetch_data(self, url: str):
         """
         获取GET端点数据 (Get GET endpoint data)
-
         Args:
             url (str): 端点URL (Endpoint URL)
-
         Returns:
             response: 响应内容 (Response content)
         """
@@ -192,10 +162,7 @@ class BaseCrawler:
             try:
                 response = await self.aclient.get(url, follow_redirects=True)
                 if not response.text.strip() or not response.content:
-                    error_message = "第 {0} 次响应内容为空, 状态码: {1}, URL:{2}".format(attempt + 1,
-                                                                                         response.status_code,
-                                                                                         response.url)
-
+                    error_message = "第 {0} 次响应内容为空, 状态码: {1}, URL:{2}".format(attempt + 1,response.status_code,response.url)
                     logger.warning(error_message)
 
                     if attempt == self._max_retries - 1:

@@ -26,7 +26,6 @@ from gmssl import sm3, func
 
 __all__ = ["ABogus", ]
 
-
 class ABogus:
     __filter = compile(r'%([0-9A-F]{2})')
     __arguments = [0, 1, 14]

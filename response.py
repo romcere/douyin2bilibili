@@ -1,6 +1,25 @@
-import asyncio
-import ast
-import json
+# ==============================================================================
+# Copyright (C) 2021 Evil0ctal
+#
+# This file is part of the Douyin_TikTok_Download_API project.
+#
+# This project is licensed under the Apache License 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+#
+# Modifications by romcere, 2026
+#
+# Changes made:
+# - 新增 fetch_one_video() 方法，该方法遵循 Apache 2.0 许可证
+# ==============================================================================
 from urllib.parse import urlencode
 from core.models import PostDetail
 from core.base_crawler import BaseCrawler
@@ -23,13 +42,12 @@ async def fetch_one_video(aweme_id: str):
 
         response = await crawler.fetch_get_json(endpoint)
     return response
-
-
-async def main():
-    result = await fetch_one_video("7618953950175300904")  # 已经是 dict
-    # SON 字符串
-    json_str = json.dumps(result, ensure_ascii=False, indent=2)
-    print(json_str)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# # 获得响应数据
+# async def main():
+#     result = await fetch_one_video("7618953950175300904")  # 已经是 dict
+#     # SON 字符串
+#     json_str = json.dumps(result, ensure_ascii=False, indent=2)
+#     print(json_str)
+#
+# if __name__ == "__main__":
+#     asyncio.run(main())

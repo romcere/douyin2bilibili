@@ -1,18 +1,40 @@
+# ==============================================================================
+# Copyright (C) 2021 Evil0ctal
+#
+# This file is part of the Douyin_TikTok_Download_API project.
+#
+# This project is licensed under the Apache License 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+#
+# Modifications by romcere, 2026
+#
+# Changes made:
+# - 新增 get_douyin_headers() 方法，该方法遵循 Apache 2.0 许可证
+# - 将该文件重构为独立方法模块，移除 FastAPI 依赖
+# ==============================================================================
 import os
 import sys
 import zipfile
 import subprocess
 import tempfile
 import asyncio
+import aiofiles
+import httpx
+import yaml
 
 # ── 把项目根目录加入模块搜索路径 ──────────────────────────────────────────────
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
-
-import aiofiles
-import httpx
-import yaml
 
 
 # 从配置文件中获取抖音的请求头
@@ -36,10 +58,8 @@ class MockRequest:
         self.url = type("URL", (), {"path": url_path})()
         self.query_params = query_params or {}
         self._disconnected = False
-
     async def is_disconnected(self) -> bool:
         return self._disconnected
-
 
 # ── 读取配置文件（TokenManager 部分） ────────────────────────────────────────
 config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
@@ -52,7 +72,6 @@ config["API"] = {
     "Download_File_Prefix": "DY_",     # 文件名前缀，改为 "" 表示不加前缀
     "Download_Path": "./downloads",    # 下载保存目录
 }
-
 
 # ── 工具函数（与原版保持一致） ────────────────────────────────────────────────
 async def fetch_data(url: str, headers: dict = None):
@@ -71,7 +90,6 @@ async def fetch_data(url: str, headers: dict = None):
         response = await client.get(url, headers=headers)
         response.raise_for_status()
         return response
-
 
 async def fetch_data_stream(
     url: str,
@@ -102,7 +120,6 @@ async def fetch_data_stream(
                         return False
                     await out_file.write(chunk)
     return True
-
 
 async def merge_bilibili_video_audio(
     video_url: str,
@@ -159,12 +176,10 @@ async def merge_bilibili_video_audio(
                 except Exception:
                     pass
 
-
 # ── HybridCrawler（延迟导入，避免在不需要时引入依赖） ──────────────────────
 def _get_crawler():
     from core.api.hybrid_crawler import HybridCrawler  # noqa: PLC0415
     return HybridCrawler()
-
 
 # ── 核心下载函数（原 router 端点的逻辑，完全解耦） ────────────────────────────
 async def download_file(
@@ -226,34 +241,14 @@ async def download_file(
 
             __headers = await get_douyin_headers()
 
-            if platform == "bilibili":
-                video_data = data.get("video_data", {})
-                video_url = (
-                    video_data.get("nwm_video_url_HQ")
-                    if not with_watermark
-                    else video_data.get("wm_video_url_HQ")
-                )
-                audio_url = video_data.get("audio_url")
-                if not video_url or not audio_url:
-                    print("无法获取 Bilibili 视频或音频地址")
-                    return None
-
-                success = await merge_bilibili_video_audio(
-                    video_url,
-                    audio_url,
-                    request,
-                    file_path,
-                    __headers.get("headers"),
-                )
-            else:
-                video_url = (
-                    data["video_data"]["nwm_video_url_HQ"]
-                    if not with_watermark
-                    else data["video_data"]["wm_video_url_HQ"]
-                )
-                success = await fetch_data_stream(
-                    video_url, request, headers=__headers, file_path=file_path
-                )
+            video_url = (
+                data["video_data"]["nwm_video_url_HQ"]
+                if not with_watermark
+                else data["video_data"]["wm_video_url_HQ"]
+            )
+            success = await fetch_data_stream(
+                video_url, request, headers=__headers, file_path=file_path
+            )
 
             if not success:
                 print("下载视频失败")
@@ -302,7 +297,6 @@ async def download_file(
     except Exception as e:
         print(f"下载过程中出现异常: {e}")
         return None
-
 
 # ── 入口 ─────────────────────────────────────────────────────────────────────
 async def main():
