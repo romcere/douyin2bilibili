@@ -29,38 +29,8 @@ from core.web_crawler import DouyinWebCrawler
 from config.settings import CONFIG
 # ── 读取配置文件 ────────────────────────────────────────
 config = CONFIG
-
-# ── 替代 FastAPI Request 的轻量封装 ─────────────────────────────────────────
-class MockRequest:
-    """模拟 FastAPI Request，仅保留 download_standalone 所需的两个方法。"""
-    def __init__(self, url_path: str = "/download", query_params: dict = None):
-        self.url = type("URL", (), {"path": url_path})()
-        self.query_params = query_params or {}
-        self._disconnected = False
-    async def is_disconnected(self) -> bool:
-        return self._disconnected
-
-# ── 工具函数（与原版保持一致） ────────────────────────────────────────────────
-async def fetch_data(url: str, headers: dict = None):
-    headers = (
-        {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/91.0.4472.124 Safari/537.36"
-            )
-        }
-        if headers is None
-        else headers.get("headers")
-    )
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-        response.raise_for_status()
-        return response
-
 async def fetch_data_stream(
     url: str,
-    request: MockRequest,
     headers: dict = None,
     file_path: str = None,
 ) -> bool:
@@ -78,13 +48,9 @@ async def fetch_data_stream(
     async with httpx.AsyncClient() as client:
         async with client.stream("GET", url, headers=headers) as response:
             response.raise_for_status()
+
             async with aiofiles.open(file_path, "wb") as out_file:
                 async for chunk in response.aiter_bytes():
-                    if await request.is_disconnected():
-                        print("客户端断开连接，清理未完成的文件")
-                        await out_file.close()
-                        os.remove(file_path)
-                        return False
                     await out_file.write(chunk)
     return True
 
@@ -97,8 +63,7 @@ def _get_crawler():
 async def download_file(
     url: str,
     prefix: bool = True,
-    with_watermark: bool = False,
-    request: MockRequest = None,
+    with_watermark: bool = False
 ) -> str | None:
     """
     下载抖音 | TikTok | Bilibili 视频 / 图片。
@@ -107,15 +72,11 @@ async def download_file(
     url          : 视频或图片的分享链接
     prefix       : 是否为输出文件名添加配置文件中定义的前缀
     with_watermark: 是否下载带水印版本（Bilibili 无效）
-    request      : MockRequest 实例；为 None 时自动创建
 
     Returns
     -------
     成功时返回本地文件路径（str），失败时返回 None。
     """
-    if request is None:
-        request = MockRequest(query_params={"url": url})
-
     # ── 检查开关 ────────────────────────────────────────────────────────────
     if not config["API"]["Download_Switch"]:
         print("Download endpoint is disabled in the configuration file.")
@@ -158,7 +119,9 @@ async def download_file(
                 else data["video_data"]["wm_video_url_HQ"]
             )
             success = await fetch_data_stream(
-                video_url, request, headers=__headers, file_path=file_path
+                url=video_url,
+                headers=__headers,
+                file_path=file_path
             )
 
             if not success:
@@ -185,7 +148,10 @@ async def download_file(
             )
             image_file_list = []
             for idx, img_url in enumerate(urls):
-                response = await fetch_data(img_url)
+                # 图片下载
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(img_url)
+                    response.raise_for_status()
                 content_type = response.headers.get("content-type", "image/jpeg")
                 file_format = content_type.split("/")[1]
                 img_name = f"{file_prefix}{platform}_{video_id}_{idx + 1}{wm_tag}.{file_format}"
@@ -212,14 +178,13 @@ async def download_file(
 # ── 入口 ─────────────────────────────────────────────────────────────────────
 async def main():
     # 在这里修改目标 URL 和参数
-    target_url = "https://www.douyin.com/video/7628183120067779675?modeFrom="
+    target_url = "https://www.douyin.com/video/7628183120067779d675?modeFrom="
 
     result = await download_file(
         url=target_url,
         prefix=True,
         with_watermark=False,
     )
-
     if result:
         print(f"\n✓ 下载成功: {result}")
     else:
