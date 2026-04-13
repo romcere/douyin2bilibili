@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-#
 # Modifications by romcere, 2026
 #
 # Changes made:
@@ -22,19 +21,16 @@
 # ==============================================================================
 
 import asyncio
-from core.common.utils import AwemeIdFetcher
-from response import fetch_one_video
+from core.web_crawler import DouyinWebCrawler
 # 提取单个作品id
-async def get_aweme_id(url: str):
-    return await AwemeIdFetcher.get_aweme_id(url)
 
 class HybridCrawler:
     async def hybrid_parsing_single_video(self, url: str, minimal: bool = False):
         # 解析抖音视频/Parse Douyin video
         if "douyin" in url:
             platform = "douyin"
-            aweme_id = await get_aweme_id(url)
-            data = await fetch_one_video(aweme_id)
+            aweme_id = await DouyinWebCrawler.get_aweme_id(url)
+            data = await DouyinWebCrawler.fetch_one_video(aweme_id)
             data = data.get("aweme_detail")
             # $.aweme_detail.aweme_type
             aweme_type = data.get("aweme_type")

@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-#
 # Modifications by romcere, 2026
 #
 # Changes made:
@@ -30,26 +29,13 @@ import asyncio
 import aiofiles
 import httpx
 import yaml
+from core.web_crawler import DouyinWebCrawler
 
 # ── 把项目根目录加入模块搜索路径 ──────────────────────────────────────────────
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-
-# 从配置文件中获取抖音的请求头
-async def get_douyin_headers():
-    douyin_config = config["TokenManager"]["douyin"]
-    kwargs = {
-        "headers": {
-            "Accept-Language": douyin_config["headers"]["Accept-Language"],
-            "User-Agent": douyin_config["headers"]["User-Agent"],
-            "Referer": douyin_config["headers"]["Referer"],
-            "Cookie": douyin_config["headers"]["Cookie"],
-        },
-        "proxies": {"http://": douyin_config["proxies"]["http"], "https://": douyin_config["proxies"]["https"]},
-    }
-    return kwargs
 # ── 替代 FastAPI Request 的轻量封装 ─────────────────────────────────────────
 class MockRequest:
     """模拟 FastAPI Request，仅保留 download_standalone 所需的两个方法。"""
@@ -178,7 +164,7 @@ async def merge_bilibili_video_audio(
 
 # ── HybridCrawler（延迟导入，避免在不需要时引入依赖） ──────────────────────
 def _get_crawler():
-    from core.api.hybrid_crawler import HybridCrawler  # noqa: PLC0415
+    from core.hybrid_crawler import HybridCrawler  # noqa: PLC0415
     return HybridCrawler()
 
 # ── 核心下载函数（原 router 端点的逻辑，完全解耦） ────────────────────────────
@@ -239,7 +225,7 @@ async def download_file(
                 print(f"文件已存在，直接返回: {file_path}")
                 return file_path
 
-            __headers = await get_douyin_headers()
+            __headers = await DouyinWebCrawler.get_douyin_headers()
 
             video_url = (
                 data["video_data"]["nwm_video_url_HQ"]
@@ -301,7 +287,7 @@ async def download_file(
 # ── 入口 ─────────────────────────────────────────────────────────────────────
 async def main():
     # 在这里修改目标 URL 和参数
-    target_url = "https://www.douyin.com/video/7616545853347482931"
+    target_url = "https://www.douyin.com/jingxuan?modal_id=7625833824341019914"
 
     result = await download_file(
         url=target_url,

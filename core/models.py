@@ -1,6 +1,6 @@
 # API响应结构
 from pydantic import BaseModel
-from .apis import TokenManager
+from .common.utils import TokenManager
 # Base Model
 class BaseRequestModel(BaseModel):
     device_platform: str = "webapp"
