@@ -178,7 +178,7 @@ async def download_file(
 # ── 入口 ─────────────────────────────────────────────────────────────────────
 async def main():
     # 在这里修改目标 URL 和参数
-    target_url = "https://www.douyin.com/video/7628183120067779d675?modeFrom="
+    target_url = "https://www.douyin.com/video/7628183120067779675?modeFrom="
 
     result = await download_file(
         url=target_url,
