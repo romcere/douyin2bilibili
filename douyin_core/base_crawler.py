@@ -27,7 +27,6 @@ import json
 import asyncio
 import re
 from httpx import Response
-from douyin_core.common.logger import logger
 from douyin_core.common.api_exceptions import (
     APIError,
     APIConnectionError,
@@ -123,16 +122,16 @@ class BaseCrawler:
                 try:
                     return json.loads(match.group())
                 except json.JSONDecodeError as e:
-                    logger.error("解析 {0} 接口 JSON 失败： {1}".format(response.url, e))
+                    print("解析 {0} 接口 JSON 失败： {1}".format(response.url, e))
                     raise APIResponseError("解析JSON数据失败")
 
         else:
             if isinstance(response, Response):
-                logger.error(
+                print(
                     "获取数据失败。状态码: {0}".format(response.status_code)
                 )
             else:
-                logger.error("无效响应类型。响应类型: {0}".format(type(response)))
+                print("无效响应类型。响应类型: {0}".format(type(response)))
 
             raise APIResponseError("获取数据失败")
 
@@ -149,7 +148,7 @@ class BaseCrawler:
                 response = await self.aclient.get(url, follow_redirects=True)
                 if not response.text.strip() or not response.content:
                     error_message = "第 {0} 次响应内容为空, 状态码: {1}, URL:{2}".format(attempt + 1,response.status_code,response.url)
-                    logger.warning(error_message)
+                    print(error_message)
 
                     if attempt == self._max_retries - 1:
                         raise APIRetryExhaustedError(
@@ -196,7 +195,7 @@ class BaseCrawler:
         status_code = getattr(response, "status_code", None)
 
         if response is None or status_code is None:
-            logger.error("HTTP状态错误: {0}, URL: {1}, 尝试次数: {2}".format(
+            print("HTTP状态错误: {0}, URL: {1}, 尝试次数: {2}".format(
                 http_error, url, attempt
             )
             )
@@ -215,7 +214,7 @@ class BaseCrawler:
         elif status_code == 429:
             raise APIRateLimitError(f"HTTP Status Code {status_code}")
         else:
-            logger.error("HTTP状态错误: {0}, URL: {1}, 尝试次数: {2}".format(
+            print("HTTP状态错误: {0}, URL: {1}, 尝试次数: {2}".format(
                 status_code, url, attempt
             )
             )

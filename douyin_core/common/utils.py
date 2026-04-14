@@ -29,7 +29,6 @@ import re
 import httpx
 import json
 from config.settings import CONFIG
-from douyin_core.common.logger import logger
 from douyin_core.common.api_exceptions import (
     APIConnectionError,
     APIResponseError
@@ -114,8 +113,8 @@ class TokenManager:
 
             except Exception as e:
                 # 返回虚假的msToken (Return a fake msToken)
-                logger.error("请求Douyin msToken API时发生错误：{0}".format(e))
-                logger.info("将使用本地生成的虚假msToken参数，以继续请求。")
+                print("请求Douyin msToken API时发生错误：{0}".format(e))
+                print("将使用本地生成的虚假msToken参数，以继续请求。")
                 return cls.gen_false_msToken()
 
     @classmethod

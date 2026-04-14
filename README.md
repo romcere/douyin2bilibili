@@ -52,21 +52,16 @@ python bilibili_upload.py login
 #### （2）上传视频
 
 ```bash
-python bilibili_upload.py upload \
-  --file 视频.mp4 \
-  --title "标题" \
-  --tid 1 \
-  --tags 标签1 标签2
+python bilibili_upload.py upload --file 视频.mp4 --title "标题" --tags 标签1 标签2
 ```
 
 参数说明：
 
-| 参数      | 说明                                                         |
-| --------- | ------------------------------------------------------------ |
-| `--file`  | 视频文件路径                                                 |
-| `--title` | 视频标题                                                     |
-| `--tid`   | 分区 ID（用于指定投稿分区，参考：https://bilitool.timerring.com/tid.html） |
-| `--tags`  | 视频标签（可多个）                                           |
+| 参数      | 说明                                                          |
+| --------- |-------------------------------------------------------------|
+| `--file`  | 视频文件路径                                                      |
+| `--title` | 视频标题                                                        |
+| `--tags`  | 视频标签（可多个）                                                   |
 
 ## 🧩 扩展工具（可选）
 
