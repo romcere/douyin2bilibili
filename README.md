@@ -52,16 +52,24 @@ python bilibili_upload.py login
 #### （2）上传视频
 
 ```bash
-python bilibili_upload.py upload --file 视频.mp4 --title "标题" --tags 标签1 标签2
+python bilibili_upload.py upload --file 视频.mp4 --title "标题" --tid 138 --tags 标签1 标签2 --desc "视频简介" --copyright 2 --source "xxx" 
 ```
 
 参数说明：
 
-| 参数      | 说明                                                          |
-| --------- |-------------------------------------------------------------|
-| `--file`  | 视频文件路径                                                      |
-| `--title` | 视频标题                                                        |
-| `--tags`  | 视频标签（可多个）                                                   |
+| 参数          | 类型      | 默认值       | 说明                                                         |
+| ------------- | --------- | ------------ | ------------------------------------------------------------ |
+| `--file`      | str       | 必填         | 本地视频文件路径                                             |
+| `--title`     | str       | 必填         | 视频标题                                                     |
+| `--tid`       | int       | 21           | 分区 ID（默认 21＝日常）。完整分区对照可参考：https://bilitool.timerring.com/tid.html。注意：此参数仅支持子分区 ID，主分区 ID（如 1）不可直接使用。 |
+| `--tags`      | list[str] | []           | 标签列表（可多个）                                           |
+| `--desc`      | str       | ""           | 视频简介                                                     |
+| `--copyright` | int       | 1            | 版权类型：1=自制，2=转载                                     |
+| `--source`    | str       | ""           | 转载来源（仅 copyright=2 时有效，且必填）                    |
+| `--cover`     | str       | None         | 封面图片路径                                                 |
+| `--lines`     | str       | AUTO         | 上传线路（AUTO/bda/bda2/ws/qn/tx/txa）                       |
+| `--threads`   | int       | 3            | 并发上传线程数                                               |
+| `--cookie`    | str       | cookies.json | Cookie 文件路径                                              |
 
 ## 🧩 扩展工具（可选）
 

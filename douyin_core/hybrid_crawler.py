@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-# Modifications by romcere, 2026
+# Modifications by Romcere, 2026
 #
 # Changes made:
 # - 删除了除douyin外的其他平台代码以及一些注释
