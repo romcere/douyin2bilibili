@@ -22,19 +22,36 @@
 
 脚本：`douyin_download.py`
 
-使用方式：
+#### 📌 使用说明
 
-1. 打开入口函数 `main()`
-2. 修改目标参数（支持的链接格式详见：[支持的提交格式](https://github.com/Evil0ctal/Douyin_TikTok_Download_API?tab=readme-ov-file#️支持的提交格式)）：
+1. 需要自行获取抖音的`cookie`，并将其序列化后放入`config/douyin_config.yaml`中
 
-```python
-target_url = "抖音视频链接"
-```
+2. 准备目标视频链接（支持格式详见：[支持的提交格式](https://github.com/Evil0ctal/Douyin_TikTok_Download_API?tab=readme-ov-file#️支持的提交格式)）
 
-3. 运行脚本：
+#### 🔍 视频信息获取
 
 ```bash
-python douyin_download.py
+# 获取精简视频信息
+python douyin_download.py info <视频链接>
+
+# 获取完整原始数据
+python douyin_download.py info <视频链接> --full
+
+# 保存为 JSON 文件
+python douyin_download.py info <视频链接> --output data.json
+```
+
+#### ⬇️ 视频下载
+
+```bash
+# 下载无水印视频（默认）
+python douyin_download.py download <视频链接>
+
+# 下载带水印视频（暂未实现）
+python douyin_download.py download <视频链接> --watermark
+
+# 下载时不添加文件名前缀（暂未实现）
+python douyin_download.py download <视频链接> --no-prefix
 ```
 
 ---
@@ -45,9 +62,9 @@ python douyin_download.py
 
 #### （1）登录账号
 
-首次使用需要登录以生成 `cookies.json`：
+首次使用需要登录以生成 `cookies.json`（存放于`config/bili_cookies.json`）：
 
-```
+```bash
 python bilibili_upload.py login
 ```
 
@@ -68,7 +85,7 @@ python bilibili_upload.py upload --file 视频.mp4 --title "标题" --tid 138 --
 | `--desc`      | str       | ""           | 视频简介                                                     |
 | `--copyright` | int       | 1            | 版权类型：1=自制，2=转载                                     |
 | `--source`    | str       | ""           | 转载来源（仅 copyright=2 时有效，且必填）                    |
-| `--cover`     | str       | None         | 封面图片路径                                                 |
+| `--cover`     | str       | None         | 封面图片路径（未实现）                                       |
 | `--lines`     | str       | AUTO         | 上传线路（AUTO/bda/bda2/ws/qn/tx/txa）                       |
 | `--threads`   | int       | 3            | 并发上传线程数                                               |
 | `--cookie`    | str       | cookies.json | Cookie 文件路径                                              |
