@@ -34,7 +34,7 @@ crawler = DouyinWebCrawler()
 async def fetch_user_post_videos(
     sec_user_id: str,
     max_cursor: int = 0,
-    count: int = 20
+    count: int = 5
 ) -> dict:
     """
     # [中文]
@@ -43,7 +43,7 @@ async def fetch_user_post_videos(
     ### 参数:
     - sec_user_id: 用户sec_user_id
     - max_cursor: 最大游标
-    - count: 最大数量 —— 未实现
+    - count: 最大数量 —— 会保留置顶视频
     ### 返回:
     - 用户作品数据
     """
@@ -85,7 +85,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-c", "--count",
         type=int,
-        default=20,
+        default=5,
         metavar="N",
         help="期望获取的作品数量",
     )

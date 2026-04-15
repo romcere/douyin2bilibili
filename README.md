@@ -94,7 +94,7 @@ python bilibili_upload.py upload --file 视频.mp4 --title "标题" --tid 138 --
 
 ```bash
 # 基本用法（位置参数 + 默认值）
-python douyin_user_info.py MS4wLjABAAAAsFL91bhVsEDoW39ZsExLDP6vhQ901VeWqx_eANoIMjJM4fKuSnka68tqyBHJs87
+python douyin_user_info.py MS4wLjABAAAAsFL91bhVsEDoW39ZsExLDP6vhQ901VeWqx_eANoIMjJM4fKuSnka68tqyBHJs87j
 
 # 指定数量和游标
 python douyin_user_info.py <sec_user_id> -c 5 -m 0
