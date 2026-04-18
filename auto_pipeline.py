@@ -1,11 +1,12 @@
 # 抖音当天视频自动搬运到B站
 import subprocess
 import json
-import sys
+import os
 from datetime import date
 from pathlib import Path
-from douyin_core.common.tools import extract_sec_user_id, is_today,is_yesterday
+from douyin_core.common.tools import extract_sec_user_id, is_today, is_yesterday
 import sys
+
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 # ========== 配置 ==========
@@ -15,6 +16,13 @@ BILI_TID = 138  # B站分区ID，138=搞笑，自行调整
 BILI_COPYRIGHT = 2  # 2=转载
 BILI_SOURCE = DOUYIN_USER_URL
 BILI_TAGS = ["抖音", "搬运"]
+
+
+def _utf8_env():
+    """让子进程强制使用 UTF-8 输出"""
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
 
 
 # ==========================
@@ -34,6 +42,7 @@ def get_today_videos() -> list[dict]:
         text=True,
         encoding="utf-8",
         errors="ignore",
+        env=_utf8_env()
     )
 
     if result.returncode != 0:
@@ -53,7 +62,7 @@ def get_today_videos() -> list[dict]:
     # 找到视频列表
     all_videos = data.get("aweme_list", [])
     # 获取当前用户的信息
-    nickname = all_videos[0].get("author",{}).get("nickname", "未知")
+    nickname = all_videos[0].get("author", {}).get("nickname", "未知")
     print(f"正在获取 {nickname} 的视频...")
     today_videos = []
     for v in all_videos:
@@ -63,7 +72,7 @@ def get_today_videos() -> list[dict]:
             # if is_yesterday(create_time):
             #     today_videos.append(v)
             if is_today(create_time):
-               today_videos.append(v)
+                today_videos.append(v)
 
         elif isinstance(create_time, str):
             # 兼容字符串时间（兜底）
@@ -80,7 +89,7 @@ def download_video(video: dict) -> Path | None:
 
     result = subprocess.run(
         ["python", "douyin_download.py", "download", url],
-        capture_output=True, text=True, encoding="utf-8", errors="ignore", cwd="."
+        capture_output=True, text=True, encoding="utf-8", errors="ignore", cwd=".", env=_utf8_env()
     )
     if result.returncode != 0:
         print(f"下载失败: {url}\n{result.stderr}")
@@ -107,7 +116,7 @@ def upload_to_bilibili(video_path: Path, title: str, desc: str):
             "--copyright", str(BILI_COPYRIGHT),
             "--source", BILI_SOURCE,
         ],
-        capture_output=True, text=True, encoding="utf-8", errors="ignore"
+        capture_output=True, text=True, encoding="utf-8", errors="ignore", env=_utf8_env()
     )
     if result.returncode != 0:
         print(f"上传失败: {video_path.name}\n{result.stderr}")
