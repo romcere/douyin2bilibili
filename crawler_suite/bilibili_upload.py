@@ -1,7 +1,7 @@
 # Copyright (C) biliup
 # Modified by Romcere (2026)
 """
-B站视频上传脚本
+B站视频上传脚本（不支持图文上传）
 基于 biliup 项目源码提取的独立上传工具
 
 使用方法:

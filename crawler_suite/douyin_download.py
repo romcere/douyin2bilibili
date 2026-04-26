@@ -21,6 +21,20 @@
 # - 将该文件重构为独立方法模块，移除 FastAPI 依赖
 # - 新增 CLI 支持：info / download 两种模式
 # ==============================================================================
+"""
+抖音视频解析与下载工具
+基于 Douyin_TikTok_Download_API 项目封装的 CLI 工具，支持 抖音 内容解析与下载
+
+使用方法:
+  1. 手动配置`config/douyin_config.yaml`文件中的抖音`cookie`
+
+  2. 获取精简视频信息
+       python douyin_download.py info <视频链接>
+
+  3. 下载无水印视频（默认）
+       python douyin_download.py download <视频链接>
+
+"""
 import os
 import json
 import zipfile
@@ -84,7 +98,7 @@ async def fetch_info(url: str, minimal: bool = False) -> dict | None:
 # ── 下载视频 / 图片 ───────────────────────────────────────────────────────────
 async def download_file(url: str, prefix: bool = True, with_watermark: bool = False) -> str | None:
     """
-    下载抖音 | TikTok | Bilibili 视频 / 图片。
+    下载抖音 视频 / 图片。
 
     Returns
     -------

@@ -20,16 +20,27 @@
 # - 修改部分代码为静态方法
 # - 改造为 Python CLI 形式运行
 # ==============================================================================
+"""
+抖音用户作品获取脚本
+基于 Douyin_TikTok_Download_API 封装的用户主页数据抓取工具
 
+使用方法:
+  1. 通过用户主页的 URL 获取 sec_user_id
+
+  2. 获取用户作品数据（默认获取 5 条，不包含置顶）:
+       python douyin_user_info.py <sec_user_id> -c 5 -m 0
+
+  3. 输出到控制台（stdout）:
+       python douyin_user_info.py <sec_user_id> -o -
+
+"""
 import asyncio
 import argparse
 import json
 import sys
 from douyin_core.web_crawler import DouyinWebCrawler
 
-
 crawler = DouyinWebCrawler()
-
 
 async def fetch_user_post_videos(
     sec_user_id: str,
