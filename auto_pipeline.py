@@ -18,6 +18,10 @@ BILI_COPYRIGHT = 2  # 2=转载
 BILI_SOURCE = DOUYIN_USER_URL # 转载来源
 BILI_TAGS = ["抖音", "搬运"] # 默认标签
 
+# 标题关键词过滤（留空列表则不过滤）
+TITLE_INCLUDE_KEYWORDS = []  # 标题必须包含其中一个
+TITLE_EXCLUDE_KEYWORDS = ['途游斗地主']  # 标题不能包含其中任何一个
+
 # 脚本路径配置（如果移动了这些文件，在这里修改）
 SCRIPTS_DIR = Path("./crawler_suite")  # 改成你实际的目录
 DOUYIN_USER_INFO_SCRIPT  = SCRIPTS_DIR / "douyin_user_info.py"
@@ -133,6 +137,29 @@ def main():
         print("今日无新视频，退出。")
         sys.exit(0)
 
+    # 关键词过滤
+    if TITLE_INCLUDE_KEYWORDS:
+        filtered = []
+        for v in videos:
+            desc = v.get("desc", "")
+            matched = [kw for kw in TITLE_INCLUDE_KEYWORDS if kw in desc]
+            if matched:
+                filtered.append(v)
+            else:
+                print(f"[跳过] 「{desc}」— 不含包含关键词: {TITLE_INCLUDE_KEYWORDS}")
+        videos = filtered
+    if TITLE_EXCLUDE_KEYWORDS:
+        filtered = []
+        for v in videos:
+            desc = v.get("desc", "")
+            matched = [kw for kw in TITLE_EXCLUDE_KEYWORDS if kw in desc]
+            if matched:
+                print(f"[跳过] 「{desc}」— 含排除关键词: {matched}")
+            else:
+                filtered.append(v)
+        videos = filtered
+
+    print(f"过滤后视频数量: {len(videos)}")
     for i,video in enumerate(videos):
         title = video.get("desc", "抖音视频搬运")
         desc = video.get("desc", "")
