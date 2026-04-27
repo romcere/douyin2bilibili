@@ -9,7 +9,7 @@ TokenManager:
       Referer: https://www.douyin.com/
       # 你唯一需要修改的地方就是这里的Cookie，然后保存后重启程序即可。
         # The only place you need to modify is the Cookie here, and then save and restart the program.
-      Cookie: 填写你的cookie
+      Cookie: __DOUYIN_COOKIE__
     proxies:
       http:
       https:
