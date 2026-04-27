@@ -2,7 +2,7 @@ name: auto-dy2bili
 
 on:
   schedule:
-  - cron: "*/5 * * * *"
+    - cron: '45 16 * * *'
   workflow_dispatch:
 
 jobs:
