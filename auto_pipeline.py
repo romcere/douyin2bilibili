@@ -83,7 +83,10 @@ def get_today_videos() -> list[dict]:
          "-"],
         capture_output=True,text=True,encoding="utf-8",errors="ignore",env=_utf8_env()
     )
-
+    # 增加详细调试输出
+    print(f"[调试] returncode: {result.returncode}")
+    print(f"[调试] stdout: {result.stdout[:500] if result.stdout else '(空)'}")
+    print(f"[调试] stderr: {result.stderr[:500] if result.stderr else '(空)'}")
     if result.returncode != 0:
         print("获取视频信息失败:", result.stderr)
         return []
