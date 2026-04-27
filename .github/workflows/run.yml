@@ -24,14 +24,28 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: 还原dy配置文件
+        env:
+          DOUYIN_COOKIE: ${{ secrets.DOUYIN_COOKIE }}
         run: |
-          sed "s|__DOUYIN_COOKIE__|${{ secrets.DOUYIN_COOKIE }}|g" config/douyin_config.example.yaml > config/douyin_config
-          .yaml
-          mv config/douyin_config.example.yaml config/douyin_config.yaml
+          python - <<'PYEOF'
+          import os
+          with open("config/douyin_config.example.yaml", "r", encoding="utf-8") as f:
+              content = f.read()
+          content = content.replace("__DOUYIN_COOKIE__", os.environ["DOUYIN_COOKIE"])
+          with open("config/douyin_config.yaml", "w", encoding="utf-8") as f:
+              f.write(content)
+          PYEOF
 
       - name: 还原B站凭证文件
+        env:
+          BILIBILI_CREDENTIALS: ${{ secrets.BILIBILI_CREDENTIALS }}
         run: |
-          echo '${{ secrets.BILIBILI_CREDENTIALS }}' > config/bili_cookies.json
+          python - <<'PYEOF'
+          import os
+          with open("config/bili_cookies.json", "w", encoding="utf-8") as f:
+              f.write(os.environ["BILIBILI_CREDENTIALS"])
+          PYEOF
+
 
       - name: 读取上传状态缓存
         uses: actions/cache@v4
