@@ -229,4 +229,5 @@ code2prompt -p ./ -o ./prompt.md --line-number -e "*.json,*.log,*.jsonl,*.csv"
 
 - 本项目仅供学习与研究，请勿用于违规用途
 
+- GitHub每60天会自动关闭闲置工作流，需进行一次提交进行活跃：2026.6.20
   
