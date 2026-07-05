@@ -20,7 +20,7 @@
 ### 自动将抖音视频上传到B站
 
 1. 手动配置`config/douyin_config.yaml`文件中的抖音`cookie`
-2. 运行`python bilibili_upload.py login`，自动生成B站cookie
+2. 运行`python crawler_suite/bilibili_upload.py login`，自动生成B站cookie
 
 3. 使用 `auto_pipeline.py` 脚本，将 `DOUYIN_USER_URL` 配置为目标用户主页地址后，即可一键运行完成全流程处理。
 

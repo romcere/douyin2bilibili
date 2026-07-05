@@ -8,3 +8,4 @@ __pycache__/
 bili_cookies.json
 data.json
 user_info.json
+state/

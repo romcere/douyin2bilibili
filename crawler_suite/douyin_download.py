@@ -29,10 +29,10 @@
   1. 手动配置`config/douyin_config.yaml`文件中的抖音`cookie`
 
   2. 获取精简视频信息
-       python douyin_download.py info <视频链接>
+       python crawler_suite/douyin_download.py info <视频链接>
 
   3. 下载无水印视频（默认）
-       python douyin_download.py download <视频链接>
+       python crawler_suite/douyin_download.py download <视频链接>
 
 """
 import os

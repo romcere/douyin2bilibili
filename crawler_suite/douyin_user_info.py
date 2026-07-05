@@ -28,10 +28,10 @@
   1. 通过用户主页的 URL 获取 sec_user_id
 
   2. 获取用户作品数据（默认获取 5 条，不包含置顶）:
-       python douyin_user_info.py <sec_user_id> -c 5 -m 0
+       python crawler_suite/douyin_user_info.py <sec_user_id> -c 5 -m 0
 
   3. 输出到控制台（stdout）:
-       python douyin_user_info.py <sec_user_id> -o -
+       python crawler_suite/douyin_user_info.py <sec_user_id> -o -
 
 """
 import asyncio

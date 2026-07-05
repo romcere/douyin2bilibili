@@ -6,10 +6,10 @@ B站视频上传脚本（不支持图文上传）
 
 使用方法:
   1. 先登录，生成 cookies.json:
-       python bilibili_upload.py login
+       python crawler_suite/bilibili_upload.py login
 
   2. 上传视频:
-       python bilibili_upload.py upload --file 视频.mp4 --title "视频标题" --tid 21 --tags 标签1 标签2
+       python crawler_suite/bilibili_upload.py upload --file 视频.mp4 --title "视频标题" --tid 21 --tags 标签1 标签2
 
 依赖安装:
   pip install requests aiohttp
