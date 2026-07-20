@@ -7,5 +7,5 @@ __pycache__/
 *.pyc
 bili_cookies.json
 data.json
-user_info.json
+output/
 state/

@@ -57,6 +57,26 @@ _CDN_MAP = {
 }
 
 
+# 直接运行时使用的配置区
+# command 可选值：login / upload
+RUN_CONFIG = {
+    'command': 'upload',
+    'cookie_file': 'config/bili_cookies.json',
+    'upload': {
+        'file_path': '',
+        'title': '',
+        'tid': 21,
+        'tags': [],
+        'desc': '',
+        'copyright': 1,
+        'source': '',
+        'cover_path': None,
+        'lines': 'AUTO',
+        'threads': 3,
+    },
+}
+
+
 # ──────────────────────────────────────────────
 # 数据模型
 # ──────────────────────────────────────────────
@@ -615,8 +635,101 @@ def upload_video(
 # CLI 入口
 # ──────────────────────────────────────────────
 
-def main() -> None:
+def _print_startup_banner() -> None:
+    print("=" * 20)
+    print("B站视频上传工具启动")
+    print("=" * 20)
+    print(f"当前任务：{RUN_CONFIG['command']}")
+    print(f"Cookie 文件：{RUN_CONFIG['cookie_file']}")
+    upload_cfg = RUN_CONFIG['upload']
+    print(f"上传文件：{upload_cfg['file_path']}")
+    print(f"视频标题：{upload_cfg['title']}")
+    print(f"分区 ID：{upload_cfg['tid']}")
+    print(f"标签：{upload_cfg['tags']}")
+    print(f"封面：{upload_cfg['cover_path']}")
+    print(f"上传线路：{upload_cfg['lines']}")
+    print(f"并发线程：{upload_cfg['threads']}")
+    print("开始执行...\n")
+
+
+def _run_login(cookie_file: str) -> None:
+    session = _make_session()
+    try:
+        BiliAuth(session).qrcode_login(cookie_file)
+    finally:
+        session.close()
+
+
+def _run_upload() -> None:
+    upload_cfg = RUN_CONFIG['upload']
+    if not upload_cfg['file_path']:
+        print('[ERROR] 请先在文件顶部 RUN_CONFIG 中填写 upload.file_path')
+        return
+    if not os.path.isfile(upload_cfg['file_path']):
+        print(f"[ERROR] 文件不存在: {upload_cfg['file_path']}")
+        return
+    if not upload_cfg['title']:
+        print('[ERROR] 请先在文件顶部 RUN_CONFIG 中填写 upload.title')
+        return
+
+    try:
+        upload_video(
+            file_path=upload_cfg['file_path'],
+            title=upload_cfg['title'],
+            tid=upload_cfg['tid'],
+            tags=upload_cfg['tags'],
+            desc=upload_cfg['desc'],
+            copyright=upload_cfg['copyright'],
+            source=upload_cfg['source'],
+            cover_path=upload_cfg['cover_path'],
+            lines=upload_cfg['lines'],
+            threads=upload_cfg['threads'],
+            cookie_file=RUN_CONFIG['cookie_file'],
+        )
+    except Exception as e:
+        print(f"[ERROR] 执行失败：{e}")
+
+
+def main(args=None) -> int:
     import argparse
+
+    if args is None and len(sys.argv) == 1:
+        _print_startup_banner()
+        command = RUN_CONFIG['command']
+        if command == 'login':
+            _run_login(RUN_CONFIG['cookie_file'])
+        elif command == 'upload':
+            _run_upload()
+        else:
+            print(f"[ERROR] 不支持的 command: {command}")
+            return 1
+        return 0
+
+    if args is not None:
+        if isinstance(args, dict):
+            args = argparse.Namespace(**args)
+        if getattr(args, 'cmd', None) == 'login':
+            _run_login(getattr(args, 'cookie', RUN_CONFIG['cookie_file']))
+            return 0
+        if getattr(args, 'cmd', None) == 'upload':
+            if not os.path.isfile(args.file):
+                print(f'[ERROR] 文件不存在: {args.file}')
+                return 1
+            upload_video(
+                file_path=args.file,
+                title=args.title,
+                tid=args.tid,
+                tags=args.tags,
+                desc=args.desc,
+                copyright=args.copyright,
+                source=args.source,
+                cover_path=args.cover,
+                lines=args.lines,
+                threads=args.threads,
+                cookie_file=args.cookie,
+            )
+            return 0
+        return 0
 
     parser = argparse.ArgumentParser(description='B 站视频上传工具')
     sub    = parser.add_subparsers(dest='cmd')
@@ -670,4 +783,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

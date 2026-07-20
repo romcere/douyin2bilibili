@@ -224,10 +224,23 @@ code2prompt -p ./ -o ./prompt.md --line-number -e "*.json,*.log,*.jsonl,*.csv"
 ## ⚠️ 注意事项
 
 - 请确保已正确配置 Python 环境（推荐 3.10+）
-
 - B站接口可能存在风控或变动，请自行处理异常情况
-
 - 本项目仅供学习与研究，请勿用于违规用途
-
 - GitHub每60天会自动关闭闲置工作流，需进行一次提交进行活跃：2026.6.20
-  
+
+## ❗❗❗严重警告
+
+> https://github.com/Evil0ctal/Douyin_TikTok_Download_API/issues/704
+
+当发现获取的douyin用户作品列表不是最新时，请尝试更新douyin的cookie，更新方法如下：
+
+1. 通过F12开发者控制台，找到任意携带cookie的请求
+
+2. 找到请求头的cookie，请右键选择**复制值**(注意不要直接ctrl+c)，其值与下述内容相似：
+
+   ```json
+   ttwid=***; enter_pc_once=1; UIFID_TEMP=***; hevc_supported=true; fpk1=***; fpk2=***; odin_tt=***; bd_ticket_guard_client_web_domain=2; bd_ticket_guard_client_data_v2=***; d_ticket=***; n_mh=***; sid_guard=***; uid_tt=***; uid_tt_ss=***; sid_tt=***; sessionid=***; sessionid_ss=***; session_tlb_tag=***; is_staff_user=false; has_biz_token=false; sid_ucp_v1=***; ssid_ucp_v1=***; login_time=***; UIFID=***; SelfTabRedDotControl=[]; __druidClientInfo=***; my_rd=2; __live_version__=%221.1.5.3865%22; live_use_vvc=%22false%22; live_debug_info=***; LivePausePop=***; PhoneResumeUidCacheV1=***; s_v_web_id=***; IsDouyinActive=true; home_can_add_dy_2_desktop=%220%22; dy_swidth=1707; dy_sheight=1067; stream_recommend_feed_params=***; strategyABtestKey=***; passport_csrf_token=***; passport_csrf_token_default=***; is_dash_user=1; volume_info=***; __security_mc_1_s_sdk_crypt_sdk=***; __security_mc_1_s_sdk_cert_key=***; __security_mc_1_s_sdk_sign_data_key_web_protect=***; FOLLOW_NUMBER_YELLOW_POINT_INFO=***; publish_badge_show_info=***; FOLLOW_LIVE_POINT_INFO=***; live_can_add_dy_2_desktop=%220%22; live_private_user=0; douyin.com=; device_web_cpu_core=16; device_web_memory_size=-1; architecture=amd64; is_support_rtm_web_ts=0; biz_trace_id=***; playRecommendGuideTagCount=2; totalRecommendGuideTagCount=2; __ac_nonce=***; __ac_signature=***; sdk_source_info=***; bit_env=***; gulu_source_res=***; passport_auth_mix_state=***; bd_ticket_guard_client_data=***; download_guide=%221%2F20260721%2F0%22; passport_assist_user=***; _bd_ticket_crypt_cookie=***; __security_server_data_status=1
+   ```
+
+3. 获得cookie后，自行将`config/douyin_config.example.yaml`文件改名为`douyin_config.yaml`，并将**`__DOUYIN_COOKIE__`**改为你的真实cookie
+

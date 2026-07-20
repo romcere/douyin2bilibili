@@ -28,10 +28,10 @@
   1. 通过用户主页的 URL 获取 sec_user_id
 
   2. 获取用户作品数据（默认获取 5 条，不包含置顶）:
-       python crawler_suite/douyin_user_info.py <sec_user_id> -c 5 -m 0
+       python -m crawler_suite.douyin_user_info <sec_user_id> -c 5 -m 0
 
   3. 输出到控制台（stdout）:
-       python crawler_suite/douyin_user_info.py <sec_user_id> -o -
+       python -m crawler_suite.douyin_user_info <sec_user_id> -o -
 
 """
 import asyncio
@@ -41,6 +41,15 @@ import sys
 from douyin_core.web_crawler import DouyinWebCrawler
 
 crawler = DouyinWebCrawler()
+
+# 直接运行时使用的配置区
+# 只需要修改这里，就可以不传命令行参数直接启动脚本
+RUN_CONFIG = {
+    "sec_user_id": "MS4wLjABAAAAsFL91bhVsEDoW39ZsExLDP6vhQ901VeWqx_eANoIMjJM4fKuSnka68tqyBHJs87j",
+    "count": 5,
+    "max_cursor": 0,
+    "output": "output/user_info.json",
+}
 
 async def fetch_user_post_videos(
     sec_user_id: str,
@@ -53,7 +62,7 @@ async def fetch_user_post_videos(
     - 获取用户主页作品数据
     ### 参数:
     - sec_user_id: 用户sec_user_id
-    - max_cursor: 最大游标
+    - max_cursor: 最大游标 (最大时间 ms时间戳)
     - count: 最大数量 —— 会保留置顶视频
     ### 返回:
     - 用户作品数据
@@ -65,7 +74,7 @@ async def fetch_user_post_videos(
         return {"code": 400, "message": str(e)}
 
 
-async def run(args: argparse.Namespace):
+async def run(args: argparse.Namespace) -> int:
     result = await fetch_user_post_videos(
         sec_user_id=args.sec_user_id,
         max_cursor=args.max_cursor,
@@ -75,12 +84,53 @@ async def run(args: argparse.Namespace):
     if args.output == "-":
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
+        import os
+
+        output_dir = os.path.dirname(args.output)
+
+        # 如果存在目录路径，则自动创建
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
+
         print(f"已保存到 {args.output}")
 
     if result.get("code") != 200:
-        sys.exit(1)
+        return 1
+    return 0
+
+
+def _print_startup_banner() -> None:
+    print("=" * 20)
+    print("抖音用户作品获取工具启动")
+    print("=" * 20)
+    print(f"当前任务：获取用户作品")
+    print(f"用户ID：{RUN_CONFIG['sec_user_id']}")
+    print(f"获取数量：{RUN_CONFIG['count']}")
+    print(f"起始游标：{RUN_CONFIG['max_cursor']}")
+    print(f"输出文件：{RUN_CONFIG['output']}")
+    print("开始执行...\n")
+
+
+async def _run_with_config() -> int:
+    _print_startup_banner()
+    if not RUN_CONFIG["sec_user_id"]:
+        print("[ERROR] 请先在文件顶部 RUN_CONFIG 中填写 sec_user_id")
+        return
+
+    args = argparse.Namespace(
+        sec_user_id=RUN_CONFIG["sec_user_id"],
+        count=RUN_CONFIG["count"],
+        max_cursor=RUN_CONFIG["max_cursor"],
+        output=RUN_CONFIG["output"],
+    )
+    try:
+        return await run(args)
+    except Exception as e:
+        print(f"[ERROR] 执行失败：{e}")
+        return 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -117,11 +167,29 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main():
-    parser = build_parser()
-    args = parser.parse_args()
-    asyncio.run(run(args))
+def main(args=None):
+    if args is None:
+        if len(sys.argv) > 1:
+            parser = build_parser()
+            args = parser.parse_args()
+            try:
+                code = asyncio.run(run(args))
+            except Exception as e:
+                print(f"[ERROR] 执行失败：{e}")
+                return 1
+            return code
+        return asyncio.run(_run_with_config())
+
+    if isinstance(args, dict):
+        args = argparse.Namespace(**args)
+
+    try:
+        code = asyncio.run(run(args))
+    except Exception as e:
+        print(f"[ERROR] 执行失败：{e}")
+        return 1
+    return code
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -29,10 +29,10 @@
   1. 手动配置`config/douyin_config.yaml`文件中的抖音`cookie`
 
   2. 获取精简视频信息
-       python crawler_suite/douyin_download.py info <视频链接>
+       python -m crawler_suite.douyin_download info <视频链接>
 
   3. 下载无水印视频（默认）
-       python crawler_suite/douyin_download.py download <视频链接>
+       python -m crawler_suite.douyin_download download <视频链接>
 
 """
 import os
@@ -40,12 +40,27 @@ import json
 import zipfile
 import asyncio
 import argparse
+import sys
 import aiofiles
 import httpx
 from douyin_core.web_crawler import DouyinWebCrawler
-from config.settings import CONFIG
+from config.settings import CONFIG as SETTINGS_CONFIG
 
-config = CONFIG
+config = SETTINGS_CONFIG
+
+# 直接运行时使用的配置区
+# command 可选值：info / download
+RUN_CONFIG = {
+    "command": "download",
+    "url": "https://www.douyin.com/video/7664531280838642978",
+    "info_minimal": True,
+    "info_output": "config/douyin_info.json",
+    "download_with_watermark": False,
+    "download_no_prefix": False,
+    "download_switch": config["API"].get("Download_Switch", True),
+    "download_file_prefix": config["API"].get("Download_File_Prefix", ""),
+    "download_path": config["API"].get("Download_Path", "downloads"),
+}
 
 
 # ── 流式下载 ──────────────────────────────────────────────────────────────────
@@ -195,6 +210,29 @@ async def download_file(url: str, prefix: bool = True, with_watermark: bool = Fa
 
 
 # ── CLI 入口 ──────────────────────────────────────────────────────────────────
+# 直接运行配置辅助
+def _sync_runtime_download_config() -> None:
+    """将顶部运行配置同步到现有配置对象，尽量不影响原有逻辑。"""
+    config.setdefault("API", {})
+    config["API"]["Download_Switch"] = RUN_CONFIG["download_switch"]
+    config["API"]["Download_File_Prefix"] = RUN_CONFIG["download_file_prefix"]
+    config["API"]["Download_Path"] = RUN_CONFIG["download_path"]
+
+
+def _print_startup_banner() -> None:
+    print("=" * 20)
+    print("抖音视频工具启动")
+    print("=" * 20)
+    print(f"当前模式：{RUN_CONFIG['command']}")
+    print(f"目标链接：{RUN_CONFIG['url']}")
+    print(f"下载开关：{RUN_CONFIG['download_switch']}")
+    print(f"下载前缀：{RUN_CONFIG['download_file_prefix']}")
+    print(f"下载目录：{RUN_CONFIG['download_path']}")
+    print(f"带水印：{RUN_CONFIG['download_with_watermark']}")
+    print(f"输出文件：{RUN_CONFIG['info_output']}")
+    print("开始执行...\n")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="douyin_cli",
@@ -280,15 +318,72 @@ async def cmd_download(args: argparse.Namespace) -> None:
         print("\n✗ 下载失败")
 
 
-async def _main() -> None:
-    parser = build_parser()
-    args   = parser.parse_args()
+async def _run_with_config() -> None:
+    _print_startup_banner()
+    if not RUN_CONFIG["url"]:
+        print("[ERROR] 请先在文件顶部 RUN_CONFIG 中填写 url")
+        return
 
+    _sync_runtime_download_config()
+
+    command = RUN_CONFIG["command"]
+    if command == "info":
+        args = argparse.Namespace(
+            url=RUN_CONFIG["url"],
+            full=not RUN_CONFIG["info_minimal"],
+            output=RUN_CONFIG["info_output"],
+        )
+        await cmd_info(args)
+        return
+
+    if command == "download":
+        args = argparse.Namespace(
+            url=RUN_CONFIG["url"],
+            watermark=RUN_CONFIG["download_with_watermark"],
+            no_prefix=RUN_CONFIG["download_no_prefix"],
+        )
+        await cmd_download(args)
+        return
+
+    print(f"[ERROR] 不支持的 command: {command}")
+
+
+async def _run_cli(args: argparse.Namespace) -> None:
     if args.command == "info":
         await cmd_info(args)
     elif args.command == "download":
         await cmd_download(args)
 
 
+def main(args=None) -> int:
+    if args is None:
+        if len(sys.argv) > 1:
+            parser = build_parser()
+            args = parser.parse_args()
+            try:
+                asyncio.run(_run_cli(args))
+            except Exception as e:
+                print(f"[ERROR] 执行失败：{e}")
+                return 1
+            return 0
+
+        try:
+            asyncio.run(_run_with_config())
+        except Exception as e:
+            print(f"[ERROR] 执行失败：{e}")
+            return 1
+        return 0
+
+    if isinstance(args, dict):
+        args = argparse.Namespace(**args)
+
+    try:
+        asyncio.run(_run_cli(args))
+    except Exception as e:
+        print(f"[ERROR] 执行失败：{e}")
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    asyncio.run(_main())
+    raise SystemExit(main())

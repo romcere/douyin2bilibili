@@ -26,9 +26,29 @@ from douyin_core.base_crawler import BaseCrawler
 from douyin_core.ab import BogusManager
 from douyin_core.common.utils import AwemeIdFetcher
 from config.settings import CONFIG
+import sys
 
 # 配置文件路径
 config = CONFIG
+
+
+def _safe_header_value(value: object, field_name: str) -> str:
+    """
+    将请求头值规范为 ASCII 安全字符串。
+
+    httpx / 底层 HTTP 实现对 header 值非常敏感，若配置里混入了
+    非 ASCII 字符（例如中文省略号 `…`），会在编码阶段触发
+    `UnicodeEncodeError: 'ascii' codec can't encode character ...`。
+    这里采用忽略策略，避免直接中断请求流程。
+    """
+    text = "" if value is None else str(value)
+    cleaned = text.encode("ascii", errors="ignore").decode("ascii")
+    if cleaned != text:
+        print(
+            f"[WARN] {field_name} 含有非 ASCII 字符，已自动清理",
+            file=sys.stderr
+        )
+    return cleaned
 
 class DouyinWebCrawler:
     # 从配置文件中获取抖音的请求头
@@ -37,10 +57,18 @@ class DouyinWebCrawler:
         douyin_config = config["TokenManager"]["douyin"]
         kwargs = {
             "headers": {
-                "Accept-Language": douyin_config["headers"]["Accept-Language"],
-                "User-Agent": douyin_config["headers"]["User-Agent"],
-                "Referer": douyin_config["headers"]["Referer"],
-                "Cookie": douyin_config["headers"]["Cookie"],
+                "Accept-Language": _safe_header_value(
+                    douyin_config["headers"]["Accept-Language"], "Accept-Language"
+                ),
+                "User-Agent": _safe_header_value(
+                    douyin_config["headers"]["User-Agent"], "User-Agent"
+                ),
+                "Referer": _safe_header_value(
+                    douyin_config["headers"]["Referer"], "Referer"
+                ),
+                "Cookie": _safe_header_value(
+                    douyin_config["headers"]["Cookie"], "Cookie"
+                ),
             },
             "proxies": {"http://": douyin_config["proxies"]["http"], "https://": douyin_config["proxies"]["https"]},
         }
