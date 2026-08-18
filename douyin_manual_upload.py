@@ -665,7 +665,7 @@ def upload_to_bilibili(video_path, video):
 
     desc = (
         f"{title}\n\n"
-        f"本视频由自动搬运工具上传"
+        f"本视频由 douyin2bilibili 自动搬运工具上传，如有问题请联系作者 https://github.com/romcere/douyin2bilibili"
     )
 
     print(f"\n正在上传 B 站：\n{title}")

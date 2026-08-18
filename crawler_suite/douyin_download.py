@@ -41,12 +41,17 @@ import zipfile
 import asyncio
 import argparse
 import sys
+import subprocess
+from pathlib import Path
 import aiofiles
 import httpx
 from douyin_core.web_crawler import DouyinWebCrawler
 from config.settings import CONFIG as SETTINGS_CONFIG
 
 config = SETTINGS_CONFIG
+USER_INFO_PATH = Path(__file__).resolve().parent / "output" / "user_info.json"
+MIN_DURATION_TOLERANCE_SECONDS = 3.0
+DURATION_TOLERANCE_RATIO = 0.01
 
 # 直接运行时使用的配置区
 # command 可选值：info / download
@@ -83,6 +88,74 @@ async def fetch_data_stream(url: str, headers: dict = None, file_path: str = Non
                 async for chunk in response.aiter_bytes():
                     await out_file.write(chunk)
     return True
+
+
+def get_expected_duration_seconds(aweme_id: str) -> float:
+    """从 user_info.json 读取当前作品的 aweme.duration（毫秒）并转换为秒。"""
+    try:
+        content = json.loads(USER_INFO_PATH.read_text(encoding="utf-8"))
+        aweme_list = content["data"]["aweme_list"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise RuntimeError(f"无法读取用户作品时长文件 {USER_INFO_PATH}: {exc}") from exc
+
+    for aweme in aweme_list:
+        if str(aweme.get("aweme_id")) != str(aweme_id):
+            continue
+
+        try:
+            duration_ms = float(aweme["duration"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError(f"作品 {aweme_id} 缺少有效 duration") from exc
+
+        if duration_ms <= 0:
+            raise RuntimeError(f"作品 {aweme_id} 的 duration 无效: {duration_ms}")
+        return duration_ms / 1000.0
+
+    raise RuntimeError(f"user_info.json 中未找到作品 {aweme_id}")
+
+
+def get_local_video_duration_seconds(file_path: str) -> float:
+    """使用 ffprobe 读取本地 MP4 实际时长。"""
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                file_path,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("未找到 ffprobe，无法校验视频时长") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("ffprobe 读取视频时长超时") from exc
+
+    if result.returncode != 0:
+        raise RuntimeError(f"ffprobe 无法解析视频: {result.stderr.strip()}")
+
+    try:
+        duration = float(result.stdout.strip())
+    except ValueError as exc:
+        raise RuntimeError(f"ffprobe 未返回有效时长: {result.stdout!r}") from exc
+
+    if duration <= 0:
+        raise RuntimeError(f"ffprobe 返回无效时长: {duration}")
+    return duration
+
+
+def is_duration_complete(expected_seconds: float, actual_seconds: float) -> bool:
+    """允许少量容器/时间基误差，但拒绝明显短于接口时长的视频。"""
+    tolerance = max(
+        MIN_DURATION_TOLERANCE_SECONDS,
+        expected_seconds * DURATION_TOLERANCE_RATIO,
+    )
+    return actual_seconds >= expected_seconds - tolerance
 
 
 # ── HybridCrawler 延迟导入 ────────────────────────────────────────────────────
@@ -145,24 +218,62 @@ async def download_file(url: str, prefix: bool = True, with_watermark: bool = Fa
             suffix    = "_watermark.mp4" if with_watermark else ".mp4"
             file_name = f"{file_prefix}{platform}_{video_id}{suffix}"
             file_path = os.path.join(download_path, file_name)
+            expected_seconds = get_expected_duration_seconds(video_id)
 
             if os.path.exists(file_path):
-                print(f"[跳过] 文件已存在: {file_path}")
-                return file_path
+                try:
+                    actual_seconds = get_local_video_duration_seconds(file_path)
+                    if is_duration_complete(expected_seconds, actual_seconds):
+                        print(
+                            f"[跳过] 文件已存在且时长完整: {file_path} "
+                            f"({actual_seconds:.3f}s / 预期 {expected_seconds:.3f}s)"
+                        )
+                        return file_path
+                    print(
+                        f"[WARN] 已存在文件时长不足，将重新下载: "
+                        f"{actual_seconds:.3f}s / 预期 {expected_seconds:.3f}s"
+                    )
+                except Exception as exc:
+                    print(f"[WARN] 已存在文件校验失败，将重新下载: {exc}")
+                os.remove(file_path)
 
-            __headers = await DouyinWebCrawler.get_douyin_headers()
-            video_url = (
-                data["video_data"]["nwm_video_url_HQ"]
-                if not with_watermark
-                else data["video_data"]["wm_video_url_HQ"]
-            )
-            print(f"[下载] 视频 → {file_path}")
-            success = await fetch_data_stream(url=video_url, headers=__headers, file_path=file_path)
-            if not success:
-                print("[错误] 视频下载失败")
-                return None
-            print(f"[完成] 视频已保存: {file_path}")
-            return file_path
+            attempt = 0
+            while True:
+                attempt += 1
+                try:
+                    __headers = await DouyinWebCrawler.get_douyin_headers()
+                    video_url = (
+                        data["video_data"]["nwm_video_url_HQ"]
+                        if not with_watermark
+                        else data["video_data"]["wm_video_url_HQ"]
+                    )
+                    print(f"[下载] 第 {attempt} 次 → {file_path}")
+                    success = await fetch_data_stream(
+                        url=video_url,
+                        headers=__headers,
+                        file_path=file_path,
+                    )
+                    if not success:
+                        raise RuntimeError("视频下载请求未成功")
+
+                    actual_seconds = get_local_video_duration_seconds(file_path)
+                    if is_duration_complete(expected_seconds, actual_seconds):
+                        print(
+                            f"[完成] 视频已保存: {file_path} "
+                            f"({actual_seconds:.3f}s / 预期 {expected_seconds:.3f}s)"
+                        )
+                        return file_path
+
+                    raise RuntimeError(
+                        f"视频时长不足: 实际 {actual_seconds:.3f}s，"
+                        f"预期 {expected_seconds:.3f}s"
+                    )
+                except Exception as exc:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    print(f"[WARN] 第 {attempt} 次下载或时长校验失败: {exc}")
+                    print("[重试] 将重新下载当前视频。")
+                    await asyncio.sleep(min(attempt * 2, 60))
 
         # ── 图片（打包为 zip） ─────────────────────────────────────────────
         elif data_type == "image":
