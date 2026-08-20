@@ -125,21 +125,34 @@ def get_today_videos() -> list[dict]:
 # 下载视频
 def download_video(video: dict) -> Path | None:
     """下载单个无水印视频，返回本地文件路径"""
-    url = video.get("share_url") or video.get("aweme_id")  # 根据实际字段调整
+    aweme_id = str(video.get("aweme_id") or "")
+    url = video.get("share_url") or f"https://www.douyin.com/video/{aweme_id}"
+    if not aweme_id:
+        print("下载失败: 视频缺少 aweme_id")
+        return None
     DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+    command = [sys.executable, DOUYIN_DOWNLOAD_SCRIPT, "download", url]
+    if video.get("duration") is not None:
+        command.extend(["--expected-duration-ms", str(video["duration"])])
+
     result = subprocess.run(
-        [sys.executable, DOUYIN_DOWNLOAD_SCRIPT, "download", url],
+        command,
         capture_output=True, text=True, encoding="utf-8", errors="ignore", env=_utf8_env()
     )
     if result.returncode != 0:
-        print(f"下载失败: {url}\n{result.stderr}")
+        print(f"下载失败: {url}\n{result.stderr or result.stdout}")
         return None
 
-    # 找到最新下载的 mp4 文件（简单策略：mtime 最新）
-    mp4_files = sorted(DOWNLOAD_DIR.glob("*.mp4"), key=lambda f: f.stat().st_mtime, reverse=True)
-    print(f"已下载视频: {mp4_files[0].name}")
-    return mp4_files[0] if mp4_files else None
+    for line in reversed(result.stdout.splitlines()):
+        if line.startswith("[RESULT] downloaded_file="):
+            file_path = Path(line.removeprefix("[RESULT] downloaded_file=").strip())
+            if file_path.is_file():
+                print(f"已下载视频: {file_path.name}")
+                return file_path
+
+    print(f"下载脚本未返回有效文件路径: {result.stdout}")
+    return None
 
 
 # 上传视频

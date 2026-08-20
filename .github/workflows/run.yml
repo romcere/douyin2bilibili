@@ -27,6 +27,9 @@ jobs:
       - name: 安装所需包
         run: pip install -r requirements.txt
 
+      - name: 安装视频完整性校验工具
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: 还原dy配置文件
         env:
           DOUYIN_COOKIE: ${{ secrets.DOUYIN_COOKIE }}

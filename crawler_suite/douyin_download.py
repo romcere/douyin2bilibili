@@ -52,6 +52,7 @@ config = SETTINGS_CONFIG
 USER_INFO_PATH = Path(__file__).resolve().parent / "output" / "user_info.json"
 MIN_DURATION_TOLERANCE_SECONDS = 3.0
 DURATION_TOLERANCE_RATIO = 0.01
+DOWNLOAD_RESULT_PREFIX = "[RESULT] downloaded_file="
 
 # 直接运行时使用的配置区
 # command 可选值：info / download
@@ -90,8 +91,20 @@ async def fetch_data_stream(url: str, headers: dict = None, file_path: str = Non
     return True
 
 
-def get_expected_duration_seconds(aweme_id: str) -> float:
-    """从 user_info.json 读取当前作品的 aweme.duration（毫秒）并转换为秒。"""
+def get_expected_duration_seconds(
+    aweme_id: str,
+    expected_duration_ms: float | None = None,
+) -> float:
+    """优先使用调用方传入的 aweme.duration（毫秒），否则从 user_info.json 查询。"""
+    if expected_duration_ms is not None:
+        try:
+            duration_ms = float(expected_duration_ms)
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError(f"作品 {aweme_id} 缺少有效 duration") from exc
+        if duration_ms <= 0:
+            raise RuntimeError(f"作品 {aweme_id} 的 duration 无效: {duration_ms}")
+        return duration_ms / 1000.0
+
     try:
         content = json.loads(USER_INFO_PATH.read_text(encoding="utf-8"))
         aweme_list = content["data"]["aweme_list"]
@@ -184,7 +197,12 @@ async def fetch_info(url: str, minimal: bool = False) -> dict | None:
 
 
 # ── 下载视频 / 图片 ───────────────────────────────────────────────────────────
-async def download_file(url: str, prefix: bool = True, with_watermark: bool = False) -> str | None:
+async def download_file(
+    url: str,
+    prefix: bool = True,
+    with_watermark: bool = False,
+    expected_duration_ms: float | None = None,
+) -> str | None:
     """
     下载抖音 视频 / 图片。
 
@@ -218,7 +236,10 @@ async def download_file(url: str, prefix: bool = True, with_watermark: bool = Fa
             suffix    = "_watermark.mp4" if with_watermark else ".mp4"
             file_name = f"{file_prefix}{platform}_{video_id}{suffix}"
             file_path = os.path.join(download_path, file_name)
-            expected_seconds = get_expected_duration_seconds(video_id)
+            expected_seconds = get_expected_duration_seconds(
+                video_id,
+                expected_duration_ms,
+            )
 
             if os.path.exists(file_path):
                 try:
@@ -241,6 +262,11 @@ async def download_file(url: str, prefix: bool = True, with_watermark: bool = Fa
             while True:
                 attempt += 1
                 try:
+                    if attempt > 1:
+                        data = await crawler.hybrid_parsing_single_video(
+                            url,
+                            minimal=True,
+                        )
                     __headers = await DouyinWebCrawler.get_douyin_headers()
                     video_url = (
                         data["video_data"]["nwm_video_url_HQ"]
@@ -395,6 +421,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-prefix", action="store_true",
         help="文件名不添加配置前缀"
     )
+    dl_parser.add_argument(
+        "--expected-duration-ms", type=float,
+        help="当前 aweme.duration（毫秒）；自动流程会直接传入该值"
+    )
 
     return parser
 
@@ -416,24 +446,28 @@ async def cmd_info(args: argparse.Namespace) -> None:
         print(output)
 
 
-async def cmd_download(args: argparse.Namespace) -> None:
+async def cmd_download(args: argparse.Namespace) -> bool:
     print(f"[解析] 准备下载 → {args.url}")
     result = await download_file(
         url=args.url,
         prefix=not args.no_prefix,
         with_watermark=args.watermark,
+        expected_duration_ms=getattr(args, "expected_duration_ms", None),
     )
     if result:
         print(f"\n✓ 下载成功: {result}")
+        print(f"{DOWNLOAD_RESULT_PREFIX}{Path(result).resolve()}")
+        return True
     else:
         print("\n✗ 下载失败")
+        return False
 
 
-async def _run_with_config() -> None:
+async def _run_with_config() -> int:
     _print_startup_banner()
     if not RUN_CONFIG["url"]:
         print("[ERROR] 请先在文件顶部 RUN_CONFIG 中填写 url")
-        return
+        return 1
 
     _sync_runtime_download_config()
 
@@ -445,25 +479,28 @@ async def _run_with_config() -> None:
             output=RUN_CONFIG["info_output"],
         )
         await cmd_info(args)
-        return
+        return 0
 
     if command == "download":
         args = argparse.Namespace(
             url=RUN_CONFIG["url"],
             watermark=RUN_CONFIG["download_with_watermark"],
             no_prefix=RUN_CONFIG["download_no_prefix"],
+            expected_duration_ms=None,
         )
-        await cmd_download(args)
-        return
+        return 0 if await cmd_download(args) else 1
 
     print(f"[ERROR] 不支持的 command: {command}")
+    return 1
 
 
-async def _run_cli(args: argparse.Namespace) -> None:
+async def _run_cli(args: argparse.Namespace) -> int:
     if args.command == "info":
         await cmd_info(args)
+        return 0
     elif args.command == "download":
-        await cmd_download(args)
+        return 0 if await cmd_download(args) else 1
+    return 1
 
 
 def main(args=None) -> int:
@@ -472,28 +509,25 @@ def main(args=None) -> int:
             parser = build_parser()
             args = parser.parse_args()
             try:
-                asyncio.run(_run_cli(args))
+                return asyncio.run(_run_cli(args))
             except Exception as e:
                 print(f"[ERROR] 执行失败：{e}")
                 return 1
-            return 0
 
         try:
-            asyncio.run(_run_with_config())
+            return asyncio.run(_run_with_config())
         except Exception as e:
             print(f"[ERROR] 执行失败：{e}")
             return 1
-        return 0
 
     if isinstance(args, dict):
         args = argparse.Namespace(**args)
 
     try:
-        asyncio.run(_run_cli(args))
+        return asyncio.run(_run_cli(args))
     except Exception as e:
         print(f"[ERROR] 执行失败：{e}")
         return 1
-    return 0
 
 
 if __name__ == "__main__":
