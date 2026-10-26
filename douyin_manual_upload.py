@@ -612,9 +612,13 @@ def download_video(video):
         )
         return None
 
-    # 查找下载后的 mp4
     files = sorted(
-        DOWNLOAD_DIR.glob("*.mp4"),
+        (
+            file
+            for file in DOWNLOAD_DIR.glob("*.mp4")
+            if file.stat().st_mtime
+            >= download_started_at - 2
+        ),
         key=lambda file: file.stat().st_mtime,
         reverse=True,
     )
@@ -622,27 +626,11 @@ def download_video(video):
     if not files:
         print(
             "下载脚本执行成功，"
-            "但下载目录不存在 MP4 文件。"
+            "但未找到本次新生成的 MP4 文件。"
         )
         return None
 
-    # 优先返回最新文件
-    latest_file = files[0]
-
-    # 判断是否是重复视频
-    if latest_file.stat().st_mtime < download_started_at:
-        print(
-            "检测到视频已存在，"
-            "直接使用已有文件："
-        )
-    else:
-        print(
-            "检测到新下载文件："
-        )
-
-    print(latest_file)
-
-    return latest_file
+    return files[0]
 
 
 def upload_to_bilibili(video_path, video):
@@ -665,7 +653,7 @@ def upload_to_bilibili(video_path, video):
 
     desc = (
         f"{title}\n\n"
-        f"本视频由 douyin2bilibili 自动搬运工具上传，如有问题请联系作者 https://github.com/romcere/douyin2bilibili"
+        f"本视频由自动搬运工具上传"
     )
 
     print(f"\n正在上传 B 站：\n{title}")
